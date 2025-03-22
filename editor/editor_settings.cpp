@@ -191,6 +191,11 @@ bool EditorSettings::_get(const StringName &p_name, Variant &r_ret) const {
 	} else if (p_name == "builtin_action_overrides") {
 		Array actions_arr;
 		for (const KeyValue<String, List<Ref<InputEvent>>> &action_override : builtin_action_overrides) {
+			const List<Ref<InputEvent>> *defaults = InputMap::get_singleton()->get_builtins().getptr(action_override.key);
+			if (!defaults) {
+				continue;
+			}
+
 			List<Ref<InputEvent>> events = action_override.value;
 
 			Dictionary action_dict;
@@ -206,8 +211,7 @@ bool EditorSettings::_get(const StringName &p_name, Variant &r_ret) const {
 			}
 
 			Array defaults_arr;
-			List<Ref<InputEvent>> defaults = InputMap::get_singleton()->get_builtins()[action_override.key];
-			for (const Ref<InputEvent> &default_input_event : defaults) {
+			for (const Ref<InputEvent> &default_input_event : *defaults) {
 				if (default_input_event.is_valid()) {
 					defaults_arr.append(default_input_event);
 				}
@@ -1812,7 +1816,7 @@ String EditorSettings::get_editor_layouts_config() const {
 	return EditorPaths::get_singleton()->get_config_dir().path_join("editor_layouts.cfg");
 }
 
-float EditorSettings::get_auto_display_scale() const {
+float EditorSettings::get_auto_display_scale() {
 #ifdef LINUXBSD_ENABLED
 	if (DisplayServer::get_singleton()->get_name() == "Wayland") {
 		float main_window_scale = DisplayServer::get_singleton()->screen_get_scale(DisplayServer::SCREEN_OF_MAIN_WINDOW);
@@ -2122,7 +2126,6 @@ void EditorSettings::notify_changes() {
 	root->propagate_notification(NOTIFICATION_EDITOR_SETTINGS_CHANGED);
 }
 
-#ifdef TOOLS_ENABLED
 void EditorSettings::get_argument_options(const StringName &p_function, int p_idx, List<String> *r_options) const {
 	const String pf = p_function;
 	if (p_idx == 0) {
@@ -2149,7 +2152,6 @@ void EditorSettings::get_argument_options(const StringName &p_function, int p_id
 	}
 	Object::get_argument_options(p_function, p_idx, r_options);
 }
-#endif
 
 void EditorSettings::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("has_setting", "name"), &EditorSettings::has_setting);
